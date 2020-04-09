@@ -1,22 +1,24 @@
 package com.karim.converter.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileWriter;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.DatumWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 import static java.lang.String.format;
 
 public class Converter {
 
+    private final SchemaGenerator schemaGenerator = new SchemaGenerator();
     private final CsvParser csvParser = new CsvParser();
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
     /**
@@ -25,39 +27,23 @@ public class Converter {
      * @param workDirectory directory where file is located
      * @param filename      the name of the file
      */
-    public void convertFromCvsToAvro(String workDirectory, String filename) {
-        String filePath = format("%s\\%s", workDirectory, filename);
-        List<List<String>> recordsFromFile = csvParser.getRecordsFromCSVFile(filePath);
-        List<String> metadata = recordsFromFile.get(0);
-        List<LinkedHashMap<String, String>> resultMap = new ArrayList<>();
-        logger.info("Converting CSV file");
-        for (int i = 1; i < recordsFromFile.size(); i++) {
-            List<String> data = recordsFromFile.get(i);
-            resultMap.add(createField(metadata, data));
-        }
-        createFile(resultMap, workDirectory, filename);
+    public void convertToAvro(String workDirectory, String filename) throws IOException {
+        logger.info("Start converting");
+        Schema schema = schemaGenerator.generateSchema();
+        GenericRecord genericRecord = new GenericData.Record(schema);
+        List<String> recordsFromCvs = csvParser.getRecordsFromCSVFile(format("%s/%s", workDirectory, filename));
+
+        genericRecord.put("fields", recordsFromCvs);
+
+        DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<>(schema);
+        DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<>(datumWriter);
+
+        String fileNameWithoutExtension = removeExtension(filename);
+        dataFileWriter.create(schema, new File(format("%s/%s.avro", workDirectory, fileNameWithoutExtension)));
+        dataFileWriter.append(genericRecord);
+
+        dataFileWriter.close();
         logger.info("Converting successfully finished!");
-    }
-
-    private LinkedHashMap<String, String> createField(List<String> meta, List<String> data) {
-        LinkedHashMap<String, String> map = new LinkedHashMap<>();
-        int index = 0;
-        for (String s : meta) {
-            map.put(s, data.get(index));
-            index++;
-        }
-        return map;
-    }
-
-    private void createFile(List<LinkedHashMap<String, String>> fields, String workDirectory, String fileName) {
-        logger.info("Crete Avro file");
-        String fileNameWithoutExtension = removeExtension(fileName);
-        Path path = Paths.get(workDirectory, fileNameWithoutExtension);
-        try {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(path.toFile(), fields);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write file");
-        }
     }
 
     private String removeExtension(String s) {

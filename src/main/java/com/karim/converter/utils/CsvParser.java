@@ -1,7 +1,6 @@
 package com.karim.converter.utils;
 
 import com.opencsv.CSVReader;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,14 +18,15 @@ public class CsvParser {
      * Method for getting records from CSV file.
      *
      * @param patToFile path to CSV file
+     * @return {@code List<String>} list of records
      */
-    public List<List<String>> getRecordsFromCSVFile(String patToFile) {
+    public List<String> getRecordsFromCSVFile(String patToFile) {
         logger.info("Processing CSV file");
-        List<List<String>> records = new ArrayList<>();
+        List<String> records = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader(patToFile))) {
             String[] values;
             while ((values = csvReader.readNext()) != null) {
-                records.add(Arrays.asList(values));
+                records.addAll(Arrays.asList(values));
             }
         } catch (IOException e) {
             logger.error(e.getMessage());

@@ -25,7 +25,12 @@ public class ConverterApplication {
         CommandLine cmd = parseArgs(args);
         String workDirectory = cmd.getOptionValue("workdir");
         String fileName = cmd.getOptionValue("filename");
-        new Converter().convertFromCvsToAvro(workDirectory, fileName);
+        try {
+            new Converter().convertToAvro(workDirectory, fileName);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            throw new RuntimeException("Cannot convert file");
+        }
     }
 
     private static CommandLine parseArgs(String[] args) {
@@ -38,7 +43,6 @@ public class ConverterApplication {
         Option workdir = new Option("workdir", true, "work directory");
         workdir.setRequired(true);
         options.addOption(workdir);
-
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
