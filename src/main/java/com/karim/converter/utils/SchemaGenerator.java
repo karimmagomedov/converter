@@ -16,8 +16,6 @@ public class SchemaGenerator {
             .fields()
             .name("fields")
             .type()
-            .array()
-            .items()
             .stringType()
             .noDefault()
             .endRecord();

@@ -10,5 +10,4 @@ public class Main {
     public static void main(String[] args) {
         ConverterApplication.startApplication(args);
     }
-
 }
